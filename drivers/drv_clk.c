@@ -2,7 +2,7 @@
 #include <rtthread.h>
 #include "drv_common.h"
 #define DBG_TAG "board"
-#define DBG_LVL DBG_INFO
+#define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
 void system_clock_config(int target_freq_mhz)
