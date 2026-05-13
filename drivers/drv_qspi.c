@@ -75,10 +75,41 @@ void HAL_QSPI_MspInit(QSPI_HandleTypeDef *hqspi) {
   }
 }
 
+typedef enum instruct_mode {
+ONLY_INSTRCUT = 0
+}instruct_mode_t;
+int stm32_qspi_commutcate_common_config(QSPI_CommandTypeDef *cmd, instruct_mode_t instrcut_mode) {
+    switch(instrcut_mode) {
+    case ONLY_INSTRCUT:
+    default:
+        cmd->InstructionMode = QSPI_INSTRUCTION_1_LINE;
+        cmd->AddressMode = QSPI_ADDRESS_NONE;
+        cmd->AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+        break;
+    }
+    return STM32_EOK;
+}
+
+int stm32_qspi_send_instruct(int instruct) {
+    QSPI_CommandTypeDef cmd;
+    cmd.Instruction = instruct;
+    stm32_qspi_commutcate_common_config(&cmd, ONLY_INSTRCUT);
+    HAL_QSPI_Command(&hqspi, &cmd, HAL_MAX_DELAY);
+    return STM32_EOK;
+}
+
+int w25q_exit_qpi_mode() {
+    stm32_qspi_send_instruct(0xFF);
+    return STM32_EOK;
+}
+
+
+
 int stm32_hw_qspi_init(void) {
     // QSPI Init
     MX_QUADSPI_Init();
     // QSPI Config
+    w25q_exit_qpi_mode();
     return STM32_EOK;
 }
 
