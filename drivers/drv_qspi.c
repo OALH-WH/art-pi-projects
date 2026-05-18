@@ -105,14 +105,14 @@ int stm32_qspi_common_CCR(QSPI_CommandTypeDef *cmd, instruct_mode_t instrcut_mod
 int stm32_qspi_send_instruct(int instruct) {
     QSPI_CommandTypeDef cmd;
     cmd.Instruction = instruct;
-    stm32_qspi_commutcate_common_config(&cmd, ONLY_INSTRCUT);
+    stm32_qspi_common_CCR(&cmd, ONLY_INSTRCUT);
     HAL_QSPI_Command(&hqspi, &cmd, HAL_MAX_DELAY);
     return STM32_EOK;
 }
 
 
 int stm32_qspi_receive_data(){
-    HAL_QSPI_Receive(&hqspi, pData, HAL_MAX_DELAY);
+    //HAL_QSPI_Receive(&hqspi, pData, HAL_MAX_DELAY);
     return STM32_EOK;
 }
 int w25q_exit_qpi_mode() {
