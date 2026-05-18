@@ -76,15 +76,27 @@ void HAL_QSPI_MspInit(QSPI_HandleTypeDef *hqspi) {
 }
 
 typedef enum instruct_mode {
-ONLY_INSTRCUT = 0
+ONLY_INSTRCUT = 0,
+READ_INSTRUCT,
+WRITE_INSTRUCT,
 }instruct_mode_t;
-int stm32_qspi_commutcate_common_config(QSPI_CommandTypeDef *cmd, instruct_mode_t instrcut_mode) {
+int stm32_qspi_common_CCR(QSPI_CommandTypeDef *cmd, instruct_mode_t instrcut_mode) {
+    cmd->InstructionMode = QSPI_INSTRUCTION_NONE;
+    cmd->AddressMode = QSPI_ADDRESS_NONE;
+    cmd->AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+    cmd->DataMode = QSPI_DATA_NONE;
+    cmd->DdrMode = QSPI_DDR_MODE_DISABLE;
+    cmd->DummyCycles = 0;
     switch(instrcut_mode) {
     case ONLY_INSTRCUT:
-    default:
         cmd->InstructionMode = QSPI_INSTRUCTION_1_LINE;
-        cmd->AddressMode = QSPI_ADDRESS_NONE;
-        cmd->AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+        break;
+    case READ_INSTRUCT:
+        cmd->InstructionMode = QSPI_INSTRUCTION_1_LINE;
+        cmd->DummyCycles = 31;
+        cmd->DataMode = QSPI_DATA_1_LINE;
+        break;
+    default:
         break;
     }
     return STM32_EOK;
@@ -98,6 +110,11 @@ int stm32_qspi_send_instruct(int instruct) {
     return STM32_EOK;
 }
 
+
+int stm32_qspi_receive_data(){
+    HAL_QSPI_Receive(&hqspi, pData, HAL_MAX_DELAY);
+    return STM32_EOK;
+}
 int w25q_exit_qpi_mode() {
     stm32_qspi_send_instruct(0xFF);
     return STM32_EOK;
