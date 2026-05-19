@@ -10,6 +10,10 @@
 #include <rtthread.h>
 #include <board.h>
 
+#define DBG_TAG "drv_qspi"
+#define DBG_LVL DBG_LOG
+#include <rtdbg.h>
+
 #define STM32_EOK RT_EOK
 #define STM32_ERROR RT_ERROR
 
@@ -81,7 +85,14 @@ READ_INSTRUCT,
 WRITE_INSTRUCT,
 }instruct_mode_t;
 
-int stm32_qspi_send_instruct(int instruct, instruct_mode_t instruct_mode, int data_len) {
+typedef enum instruct_line {
+    INVALID_LINE = 0,
+    SINGLE_LINE = 0x10,
+    DUAL_LINE = 0x20,
+    QUAD_LINE = 0x30
+}instruct_line_t;
+
+int stm32_qspi_send_instruct(int instruct, instruct_mode_t instruct_mode, instruct_line_t instruct_line, int data_len) {
     QSPI_CommandTypeDef cmd;
     cmd.Instruction = instruct;
     cmd.InstructionMode = QSPI_INSTRUCTION_NONE;
@@ -90,9 +101,12 @@ int stm32_qspi_send_instruct(int instruct, instruct_mode_t instruct_mode, int da
     cmd.DataMode = QSPI_DATA_NONE;
     cmd.DdrMode = QSPI_DDR_MODE_DISABLE;
     cmd.DummyCycles = 0;
-    switch(instruct_mode) {
+    switch(instruct_mode | instruct_line) {
     case ONLY_INSTRCUT:
         cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+        break;
+    case (ONLY_INSTRCUT | QUAD_LINE):
+        cmd.InstructionMode = QSPI_INSTRUCTION_4_LINES;
         break;
     case READ_INSTRUCT:
         cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
@@ -113,7 +127,7 @@ int stm32_qspi_receive_data(uint8_t *pData){
     return STM32_EOK;
 }
 int w25q_exit_qpi_mode() {
-    stm32_qspi_send_instruct(0xFF, ONLY_INSTRCUT, 0);
+    stm32_qspi_send_instruct(0xFF, ONLY_INSTRCUT, QUAD_LINE, 0);
     return STM32_EOK;
 }
 
@@ -121,16 +135,22 @@ void w25q_get_unique_id() {
     // 64-bits/8-bytes unique id
     uint8_t unique_id[8];
 
-    stm32_qspi_send_instruct(0x4b, READ_INSTRUCT, 9);
+    stm32_qspi_send_instruct(0x4B, READ_INSTRUCT, INVALID_LINE, 8);
+    LOG_D("DLR=%u", hqspi.Instance->DLR);
     stm32_qspi_receive_data(unique_id);
+    for(int i=0; i<8; i++) {
+        LOG_D("unique_id[%d]=%u", i, unique_id[i]);
+    }
 }
 MSH_CMD_EXPORT(w25q_get_unique_id, get w25q unique id);
+
+
 
 int stm32_hw_qspi_init(void) {
     // QSPI Init
     MX_QUADSPI_Init();
     // QSPI Config
-    w25q_exit_qpi_mode();
+    //w25q_exit_qpi_mode();
     return STM32_EOK;
 }
 
