@@ -112,6 +112,8 @@ int stm32_qspi_send_instruct(int instruct, instruct_mode_t instruct_mode, instru
         break;
     case READ_INSTRUCT:
     case (READ_INSTRUCT | SINGLE_LINE):
+    case WRITE_INSTRUCT:
+    case (WRITE_INSTRUCT | SINGLE_LINE):
         cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
         cmd.DummyCycles = dummyCycles;
         cmd.DataMode = QSPI_DATA_1_LINE;
@@ -149,19 +151,16 @@ void w25q_get_unique_id() {
 }
 MSH_CMD_EXPORT(w25q_get_unique_id, get w25q unique id);
 
-void w25q_quad_enable() {
-
-}
-
-void w25q_quad_disable() {
-
-}
-
 
 typedef enum sr_num {
-    W25QXX_SR_1 = 0x05,
-    W25QXX_SR_2 = 0x35,
-    W25QXX_SR_3 = 0x15
+    W25QXX_READ_SR_1 = 0x05,
+    W25QXX_READ_SR_2 = 0x35,
+    W25QXX_READ_SR_3 = 0x15,
+    W25QXX_READ_SR_END = 0x01,
+    W25QXX_WRITE_SR_1 = W25QXX_READ_SR_END,
+    W25QXX_WRITE_SR_2 = 0x31,
+    W25QXX_WRITE_SR_3 = 0x11,
+    W25QXX_WRITE_SR_END
 }sr_num_t;
 uint32_t w25q_read_sr(sr_num_t sr_num) {
     uint8_t pData[1] = {0};
@@ -176,6 +175,46 @@ uint32_t w25q_read_sr(sr_num_t sr_num) {
     return sr;
 }
 
+#define SR_SET 1
+#define SR_UNSET 0
+uint32_t w25q_write_sr(sr_num_t sr_num, int set, uint8_t mask) {
+    uint8_t cur_sr = 0;
+    switch(sr_num) {
+    case W25QXX_WRITE_SR_1:
+        cur_sr = w25q_read_sr(W25QXX_READ_SR_1);
+        break;
+    case W25QXX_WRITE_SR_2:
+        cur_sr = w25q_read_sr(W25QXX_READ_SR_2);
+        break;
+    case W25QXX_WRITE_SR_3:
+        cur_sr = w25q_read_sr(W25QXX_READ_SR_3);
+        break;
+    default:
+        LOG_D("sr_num=%d is not supported", sr_num);
+        return STM32_ERROR;
+    }
+    stm32_qspi_send_instruct(sr_num, WRITE_INSTRUCT, cur_line, 1, 0);
+    if (SR_SET) {
+        *(volatile uint8_t *)(hqspi.Instance->DR) = cur_sr | (mask);
+    }
+    else {
+        *(volatile uint8_t *)(hqspi.Instance->DR) = cur_sr & (~mask);
+    }
+    return STM32_EOK;
+}
+
+#define W25QXX_SR_QE (uint8_t)(1 << 1)
+void w25q_quad_enable() {
+    w25q_write_sr(W25QXX_WRITE_SR_2, SR_SET, W25QXX_SR_QE);
+}
+MSH_CMD_EXPORT(w25q_quad_enable, w25qxx quad enable);
+
+void w25q_quad_disable() {
+    w25q_write_sr(W25QXX_WRITE_SR_2, SR_UNSET, W25QXX_SR_QE);
+}
+MSH_CMD_EXPORT(w25q_quad_disable, w25qxx quad disable);
+
+
 void w25q_get_sr(int argc, char **argv) {
     if (argc <= 1) {
         LOG_D("require sr num, eg. w25q_get_sr 1");
@@ -185,13 +224,13 @@ void w25q_get_sr(int argc, char **argv) {
     LOG_D("cmd=%s arg1=%c", argv[0], argv[1][0]);
     switch ((uint32_t)argv[1][0]) {
     case '1':
-        sr=w25q_read_sr(W25QXX_SR_1);
+        sr=w25q_read_sr(W25QXX_READ_SR_1);
         break;
     case '2':
-        sr=w25q_read_sr(W25QXX_SR_2);
+        sr=w25q_read_sr(W25QXX_READ_SR_2);
                 break;
     case '3':
-    sr=w25q_read_sr(W25QXX_SR_3);
+    sr=w25q_read_sr(W25QXX_READ_SR_3);
             break;
     }
     LOG_D("sr=0x%x", sr);
