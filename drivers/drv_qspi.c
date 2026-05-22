@@ -162,7 +162,7 @@ typedef enum sr_num {
     W25QXX_WRITE_SR_3 = 0x11,
     W25QXX_WRITE_SR_END
 }sr_num_t;
-uint32_t w25q_read_sr(sr_num_t sr_num) {
+uint32_t w25q_sr_read(sr_num_t sr_num) {
     uint8_t pData[1] = {0};
     uint8_t sr = 0;
 
@@ -175,33 +175,80 @@ uint32_t w25q_read_sr(sr_num_t sr_num) {
     return sr;
 }
 
+uint32_t w25q_write_enable() {
+    stm32_qspi_send_instruct(0x06, ONLY_INSTRCUT, cur_line, 0, 0);
+    return STM32_EOK;
+}
+MSH_CMD_EXPORT(w25q_write_enable, w25q write enable);
+
+uint32_t w25q_write_disable() {
+    stm32_qspi_send_instruct(0x04, ONLY_INSTRCUT, cur_line, 0, 0);
+    return STM32_EOK;
+}
+MSH_CMD_EXPORT(w25q_write_disable, w25q write disable);
+
 #define SR_SET 1
 #define SR_UNSET 0
+#define W25QXX_SR_MASK_ALL 0xff
 uint32_t w25q_write_sr(sr_num_t sr_num, int set, uint8_t mask) {
     uint8_t cur_sr = 0;
+    uint8_t pData = 0;
+    int srnum=0;
+
     switch(sr_num) {
     case W25QXX_WRITE_SR_1:
-        cur_sr = w25q_read_sr(W25QXX_READ_SR_1);
+        srnum = 1;
+        cur_sr = w25q_sr_read(W25QXX_READ_SR_1);
         break;
     case W25QXX_WRITE_SR_2:
-        cur_sr = w25q_read_sr(W25QXX_READ_SR_2);
+        srnum = 2;
+        cur_sr = w25q_sr_read(W25QXX_READ_SR_2);
         break;
     case W25QXX_WRITE_SR_3:
-        cur_sr = w25q_read_sr(W25QXX_READ_SR_3);
+        srnum = 3;
+        cur_sr = w25q_sr_read(W25QXX_READ_SR_3);
         break;
     default:
         LOG_D("sr_num=%d is not supported", sr_num);
         return STM32_ERROR;
     }
+    w25q_write_enable();
     stm32_qspi_send_instruct(sr_num, WRITE_INSTRUCT, cur_line, 1, 0);
-    if (SR_SET) {
-        *(volatile uint8_t *)(hqspi.Instance->DR) = cur_sr | (mask);
+    if (set) {
+        LOG_D("sr set");
+        pData = cur_sr | (mask);
     }
     else {
-        *(volatile uint8_t *)(hqspi.Instance->DR) = cur_sr & (~mask);
+        LOG_D("sr unset");
+        pData = cur_sr & (~mask);
     }
+    LOG_D("sr[%d]=0x%x change to 0x%x", srnum, cur_sr, pData);
+    HAL_QSPI_Transmit(&hqspi, &pData, HAL_MAX_DELAY);
     return STM32_EOK;
 }
+
+void w25q_sr_set(int argc, char **argv) {
+    if (argc <= 2) {
+        LOG_D("require sr num and set/unset, eg. w25q_sr_reset 1 1 0xff");
+        return;
+    }
+    LOG_D("cmd=%s arg1=%c arg2=%c", argv[0], argv[1][0], argv[2][0]);
+    uint8_t set = argv[2][0] == '1' ? SR_SET:SR_UNSET;
+    switch ((uint32_t)argv[1][0]) {
+    case '1':
+        w25q_write_sr(W25QXX_WRITE_SR_1, set, W25QXX_SR_MASK_ALL);
+        break;
+    case '2':
+        w25q_write_sr(W25QXX_WRITE_SR_2, set, W25QXX_SR_MASK_ALL);
+                break;
+    case '3':
+        w25q_write_sr(W25QXX_WRITE_SR_3, set, W25QXX_SR_MASK_ALL);
+                break;
+    }
+
+}
+MSH_CMD_EXPORT(w25q_sr_reset, status registe reset);
+
 
 #define W25QXX_SR_QE (uint8_t)(1 << 1)
 void w25q_quad_enable() {
@@ -215,7 +262,7 @@ void w25q_quad_disable() {
 MSH_CMD_EXPORT(w25q_quad_disable, w25qxx quad disable);
 
 
-void w25q_get_sr(int argc, char **argv) {
+void w25q_sr_get(int argc, char **argv) {
     if (argc <= 1) {
         LOG_D("require sr num, eg. w25q_get_sr 1");
         return;
@@ -224,13 +271,13 @@ void w25q_get_sr(int argc, char **argv) {
     LOG_D("cmd=%s arg1=%c", argv[0], argv[1][0]);
     switch ((uint32_t)argv[1][0]) {
     case '1':
-        sr=w25q_read_sr(W25QXX_READ_SR_1);
+        sr=w25q_sr_read(W25QXX_READ_SR_1);
         break;
     case '2':
-        sr=w25q_read_sr(W25QXX_READ_SR_2);
+        sr=w25q_sr_read(W25QXX_READ_SR_2);
                 break;
     case '3':
-    sr=w25q_read_sr(W25QXX_READ_SR_3);
+    sr=w25q_sr_read(W25QXX_READ_SR_3);
             break;
     }
     LOG_D("sr=0x%x", sr);
