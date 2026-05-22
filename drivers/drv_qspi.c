@@ -187,9 +187,14 @@ uint32_t w25q_write_disable() {
 }
 MSH_CMD_EXPORT(w25q_write_disable, w25q write disable);
 
+uint32_t w25q_write_enable_for_volatile() {
+    stm32_qspi_send_instruct(0x50, ONLY_INSTRCUT, cur_line, 0, 0);
+    return STM32_EOK;
+}
+
 #define SR_SET 1
 #define SR_UNSET 0
-#define W25QXX_SR_MASK_ALL 0xff
+#define SR_CUSTOM 2
 uint32_t w25q_write_sr(sr_num_t sr_num, int set, uint8_t mask) {
     uint8_t cur_sr = 0;
     uint8_t pData = 0;
@@ -212,18 +217,23 @@ uint32_t w25q_write_sr(sr_num_t sr_num, int set, uint8_t mask) {
         LOG_D("sr_num=%d is not supported", sr_num);
         return STM32_ERROR;
     }
-    w25q_write_enable();
+    w25q_write_enable_for_volatile();
     stm32_qspi_send_instruct(sr_num, WRITE_INSTRUCT, cur_line, 1, 0);
-    if (set) {
-        LOG_D("sr set");
+    if (set == SR_SET) {
+        
         pData = cur_sr | (mask);
+        LOG_D("sr set pData=0x%x", pData);
     }
-    else {
-        LOG_D("sr unset");
+    else if (set == SR_UNSET) {
         pData = cur_sr & (~mask);
+        LOG_D("sr unset pData=0x%x", pData);
+    } else {
+        pData = mask;
+        LOG_D("sr custom pData=0x%x", pData);
     }
-    LOG_D("sr[%d]=0x%x change to 0x%x", srnum, cur_sr, pData);
+    
     HAL_QSPI_Transmit(&hqspi, &pData, HAL_MAX_DELAY);
+    LOG_D("sr[%d]=0x%x change to 0x%x", srnum, cur_sr, pData);
     return STM32_EOK;
 }
 
@@ -232,22 +242,50 @@ void w25q_sr_set(int argc, char **argv) {
         LOG_D("require sr num and set/unset, eg. w25q_sr_reset 1 1 0xff");
         return;
     }
-    LOG_D("cmd=%s arg1=%c arg2=%c", argv[0], argv[1][0], argv[2][0]);
-    uint8_t set = argv[2][0] == '1' ? SR_SET:SR_UNSET;
+    LOG_D("cmd=%s arg1=%s arg2=%s arg3=%s", argv[0], argv[1], argv[2], argv[3]);
+    uint8_t set = argv[2][0] == '1' ? SR_SET: \
+        (argv[2][0] == '0' ? SR_UNSET : SR_CUSTOM);
+    LOG_D("set=%d", set);
+    uint8_t mask = 0x00, str_ptr = 0;
+    while(argv[3][str_ptr] != '\0') {
+        if (str_ptr == 0 && argv[3][str_ptr] == '0') {
+            str_ptr++;
+            continue;
+        }
+        if (argv[3][str_ptr] == 'x' || argv[3][str_ptr] == 'X') {
+            str_ptr++;
+            continue;
+        }
+        mask <<= 4;
+        if (argv[3][str_ptr] >= '0' && argv[3][str_ptr] <= '9') {
+            mask |= (argv[3][str_ptr] - '0');
+        }
+        else if (argv[3][str_ptr] >= 'a' && argv[3][str_ptr] <= 'f') {
+            mask |= (argv[3][str_ptr] - 'a' + 10);
+        }
+        else if (argv[3][str_ptr] >= 'A' && argv[3][str_ptr] <= 'F') {
+            mask |= (argv[3][str_ptr] - 'A' + 10);
+        }
+        else {
+            LOG_D("invalid mask char=%c", argv[3][str_ptr]);
+            return;
+        }
+        str_ptr++;
+    }
     switch ((uint32_t)argv[1][0]) {
     case '1':
-        w25q_write_sr(W25QXX_WRITE_SR_1, set, W25QXX_SR_MASK_ALL);
+        w25q_write_sr(W25QXX_WRITE_SR_1, set, mask);
         break;
     case '2':
-        w25q_write_sr(W25QXX_WRITE_SR_2, set, W25QXX_SR_MASK_ALL);
-                break;
+        w25q_write_sr(W25QXX_WRITE_SR_2, set, mask);
+        break;
     case '3':
-        w25q_write_sr(W25QXX_WRITE_SR_3, set, W25QXX_SR_MASK_ALL);
-                break;
+        w25q_write_sr(W25QXX_WRITE_SR_3, set, mask);
+        break;
     }
 
 }
-MSH_CMD_EXPORT(w25q_sr_reset, status registe reset);
+MSH_CMD_EXPORT(w25q_sr_set, status registe set eg. w25q_sr_reset 1 1 0xff);
 
 
 #define W25QXX_SR_QE (uint8_t)(1 << 1)
@@ -282,13 +320,19 @@ void w25q_sr_get(int argc, char **argv) {
     }
     LOG_D("sr=0x%x", sr);
 }
-MSH_CMD_EXPORT(w25q_get_sr, get w25qxx sr data);
+MSH_CMD_EXPORT(w25q_sr_get, get w25qxx sr data);
+
+void stm32_qspi_enter_memory_mapped_mode() {
+    QSPI_CommandTypeDef cmd;
+    QSPI_MemoryMappedTypeDef cfg;
+    HAL_QSPI_MemoryMapped(&hqspi, &cmd, &cfg);
+}
 
 int stm32_hw_qspi_init(void) {
     // QSPI Init
     MX_QUADSPI_Init();
     // QSPI Config
-    w25q_exit_qpi_mode();
+    //w25q_exit_qpi_mode();
     return STM32_EOK;
 }
 
