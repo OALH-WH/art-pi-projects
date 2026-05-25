@@ -162,7 +162,7 @@ typedef enum sr_num {
     W25QXX_WRITE_SR_3 = 0x11,
     W25QXX_WRITE_SR_END
 }sr_num_t;
-uint32_t w25q_sr_read(sr_num_t sr_num) {
+uint8_t w25q_sr_read(sr_num_t sr_num) {
     uint8_t pData[1] = {0};
     uint8_t sr = 0;
 
@@ -323,16 +323,52 @@ void w25q_sr_get(int argc, char **argv) {
 MSH_CMD_EXPORT(w25q_sr_get, get w25qxx sr data);
 
 void stm32_qspi_enter_memory_mapped_mode() {
-    QSPI_CommandTypeDef cmd;
-    QSPI_MemoryMappedTypeDef cfg;
+    QSPI_CommandTypeDef cmd = {0};
+    QSPI_MemoryMappedTypeDef cfg =  {0};
+
+    // 判断QE是否使能
+    uint8_t enable_qe_count = 0;
+check_qe:
+    {
+        uint8_t sr = w25q_sr_read(W25QXX_READ_SR_2);
+        if (!(sr & 0b10)) {
+            if (enable_qe_count > 3) {
+                LOG_D("QE bit is not set, enable quad mode count=%d, but still not set, exit", enable_qe_count);
+                return;
+            }
+
+            enable_qe_count++;
+            LOG_D("QE bit is not set, enable quad mode count=%d", enable_qe_count);
+            w25q_quad_enable();
+            goto check_qe;
+        }
+    }
+
+    cmd.Instruction = 0xEB; // Quad I/O Fast Read
+    cmd.AddressMode = QSPI_ADDRESS_4_LINES;
+    cmd.DataMode = QSPI_DATA_4_LINES;
+    cmd.DummyCycles = 4;
+    cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    cmd.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+
+    cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_ENABLE;
+    cfg.TimeOutPeriod = 0xff;
+
     HAL_QSPI_MemoryMapped(&hqspi, &cmd, &cfg);
 }
+
+int test_w25q_xip() {
+    
+    return RT_EOK;
+}
+MSH_CMD_EXPORT(test_w25q_xip, test w25q xip function);
 
 int stm32_hw_qspi_init(void) {
     // QSPI Init
     MX_QUADSPI_Init();
     // QSPI Config
     //w25q_exit_qpi_mode();
+    stm32_qspi_enter_memory_mapped_mode();
     return STM32_EOK;
 }
 
