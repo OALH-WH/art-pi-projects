@@ -13,6 +13,7 @@
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
+#include <board.h>
 
 int main(void)
 {
@@ -20,13 +21,36 @@ int main(void)
     LOG_D("Hello RT-Thread!");
     LOG_D("Hello Test Bootloader");
 
-/*
-    int count = 1;
+    // 把RTOS停了,防止多线程其他操作影响boot, 即停掉systick, 内核配置
+    SysTick->CTRL = 0;
 
+    // 把中断关了, 防止修改VTOR的时候受到影响, 内核配置
+    /*
+    uint8_t i = 8;
+    for (;i < 8; i++) {
+        NVIC->ICER = 0xffff;
+        NVIC->ICPR = 0xffff;
+    }
+    */
+
+    // 清除内核cache
+    SCB_DisableDCache();
+    SCB_DisableICache();
+
+    // 以上就是清理环境
+
+    //
+
+    /*
+    int count = 1;
+    uint8_t *pData = BSP_QSPI_ADDR_BASE;
     while (count++)
     {
         rt_thread_mdelay(1000);
-    }
-*/
+        LOG_D("data=0x%x of 8-bits", *pData);
+        pData++;
+
+    }*/
+
     return RT_EOK;
 }
