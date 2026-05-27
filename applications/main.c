@@ -43,8 +43,7 @@ int main(void)
     // 跳转
     JumpToApplication = (pFunction)(*(__IO uint32_t *)(BSP_QSPI_ADDR_BASE + 4));
     __set_MSP(*(__IO uint32_t *)BSP_QSPI_ADDR_BASE);
-    LOG_D("addr=0x%8x", JumpToApplication);
-    //JumpToApplication();
+    JumpToApplication();
 
     /*
     int count = 1;

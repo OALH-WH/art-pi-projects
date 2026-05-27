@@ -346,15 +346,43 @@ check_qe:
 
     cmd.Instruction = 0xEB; // Quad I/O Fast Read
     cmd.AddressMode = QSPI_ADDRESS_4_LINES;
+    cmd.AddressSize = QSPI_ADDRESS_24_BITS;
     cmd.DataMode = QSPI_DATA_4_LINES;
-    cmd.DummyCycles = 4;
-    cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    cmd.DummyCycles = 8;
+    cmd.InstructionMode = QSPI_INSTRUCTION_4_LINES;
     cmd.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
 
-    cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_ENABLE;
-    cfg.TimeOutPeriod = 0xff;
+    cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
+    cfg.TimeOutPeriod = 0x0;
 
     HAL_QSPI_MemoryMapped(&hqspi, &cmd, &cfg);
+}
+
+void W25Q_Memory_Mapped_Enable(void)
+{
+  QSPI_CommandTypeDef s_command;
+  QSPI_MemoryMappedTypeDef s_mem_mapped_cfg;
+
+  /* Configure the command for the read instruction */
+  s_command.InstructionMode = QSPI_INSTRUCTION_4_LINES;
+  s_command.Instruction = 0xeb;
+  s_command.AddressMode = QSPI_ADDRESS_4_LINES;
+  s_command.AddressSize = QSPI_ADDRESS_24_BITS;
+  s_command.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  s_command.DataMode = QSPI_DATA_4_LINES;
+  s_command.DummyCycles = 8;
+  s_command.DdrMode = QSPI_DDR_MODE_DISABLE;
+  s_command.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  s_command.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  /* Configure the memory mapped mode */
+  s_mem_mapped_cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
+  s_mem_mapped_cfg.TimeOutPeriod = 0;
+
+  if (HAL_QSPI_MemoryMapped(&hqspi, &s_command, &s_mem_mapped_cfg) != HAL_OK)
+  {
+
+  }
 }
 
 int test_w25q_xip() {
@@ -369,6 +397,8 @@ int stm32_hw_qspi_init(void) {
     // QSPI Config
     //w25q_exit_qpi_mode();
     stm32_qspi_enter_memory_mapped_mode();
+    //W25Q_Memory_Mapped_Enable();
+
     return STM32_EOK;
 }
 
@@ -378,3 +408,10 @@ int rt_hw_qspi_init()
     return RT_EOK;
 }
 INIT_BOARD_EXPORT(rt_hw_qspi_init);
+
+int rt_hw_qspi_test()
+{
+    void (*JumpToApplication)(void) = (void(*)(void))(*(__IO uint32_t *)(BSP_QSPI_ADDR_BASE + 4));
+    LOG_D("addr=0x%p", JumpToApplication);
+}
+INIT_PREV_EXPORT(rt_hw_qspi_test);
