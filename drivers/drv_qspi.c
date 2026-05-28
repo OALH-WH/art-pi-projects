@@ -396,8 +396,11 @@ int stm32_hw_qspi_init(void) {
     MX_QUADSPI_Init();
     // QSPI Config
     //w25q_exit_qpi_mode();
+#if 1
     stm32_qspi_enter_memory_mapped_mode();
-    //W25Q_Memory_Mapped_Enable();
+#else
+    W25Q_Memory_Mapped_Enable();
+#endif
 
     return STM32_EOK;
 }
