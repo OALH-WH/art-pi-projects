@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd 'C:\\\\Users\\\\OALH\\\\MyFiles\\\\IDE\\\\RT-ThreadStudio\\\\workspace\\\\art-pi-projects'; scons\")"
+    ]
+  }
+}

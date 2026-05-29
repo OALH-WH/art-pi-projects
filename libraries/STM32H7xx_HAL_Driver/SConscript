@@ -1,0 +1,12 @@
+from building import *
+
+cwd = GetCurrentDir()
+src = Glob('Src/*.c')
+CPPPATH = [
+    cwd + '/Inc',
+    cwd + '/../../CMSIS/Device/ST/STM32H7xx/Include',
+    cwd + '/../../CMSIS/Include',
+]
+
+group = DefineGroup('HAL_Driver', src, depend = [''], CPPPATH = CPPPATH)
+Return('group')

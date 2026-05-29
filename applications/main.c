@@ -22,15 +22,16 @@ int main(void)
     LOG_D("Hello RT-Thread!");
     LOG_D("Hello Test Bootloader");
 
-    // 跳转
-    JumpToApplication = (pFunction)(*(__IO uint32_t *)(BSP_QSPI_ADDR_BASE + 4));
-    if (JumpToApplication <= BSP_QSPI_ADDR_BASE){
-        return RT_ERROR;
-    }
-    // 清除内核cache
+    // 先停 cache，再读 QSPI，确保读到的是 Flash 真实值而非 D-Cache 中的过期数据
     SCB_DisableDCache();
     SCB_DisableICache();
 
+    // 跳转
+    JumpToApplication = (pFunction)(*(__IO uint32_t *)(BSP_QSPI_ADDR_BASE + 4));
+    if (JumpToApplication <= BSP_QSPI_ADDR_BASE){
+        LOG_D("Invalid application address");
+        return RT_ERROR;
+    }
     // 把RTOS停了,防止多线程其他操作影响boot, 即停掉systick, 内核配置
     SysTick->CTRL = 0;
     __set_MSP(*(__IO uint32_t *)BSP_QSPI_ADDR_BASE);

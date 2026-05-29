@@ -35,3 +35,8 @@ DebugConfig/
 RTE/
 settings/
 *.uvguix*
+compile_commands.json
+.cache/
+.sconsign*
+.sconf_temp*
+.scons_env.json

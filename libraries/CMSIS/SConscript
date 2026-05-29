@@ -1,0 +1,13 @@
+from building import *
+
+cwd = GetCurrentDir()
+src = Glob('Device/ST/STM32H7xx/Source/Templates/gcc/*.S')
+src += Glob('Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c')
+
+CPPPATH = [
+    cwd + '/Include',
+    cwd + '/Device/ST/STM32H7xx/Include',
+]
+
+group = DefineGroup('CMSIS', src, depend = [''], CPPPATH = CPPPATH)
+Return('group')

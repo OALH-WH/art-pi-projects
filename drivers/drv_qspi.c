@@ -385,12 +385,6 @@ void W25Q_Memory_Mapped_Enable(void)
   }
 }
 
-int test_w25q_xip() {
-    
-    return RT_EOK;
-}
-MSH_CMD_EXPORT(test_w25q_xip, test w25q xip function);
-
 int stm32_hw_qspi_init(void) {
     // QSPI Init
     MX_QUADSPI_Init();
@@ -416,5 +410,6 @@ int rt_hw_qspi_test()
 {
     void (*JumpToApplication)(void) = (void(*)(void))(*(__IO uint32_t *)(BSP_QSPI_ADDR_BASE + 4));
     LOG_D("addr=0x%p", JumpToApplication);
+    return RT_EOK;
 }
 INIT_PREV_EXPORT(rt_hw_qspi_test);
