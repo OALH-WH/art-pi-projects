@@ -28,6 +28,8 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 256
 #define RT_VER_NUM 0x30104
+#define RT_USING_DEVICE
+#define RT_CONSOLE_DEVICE_NAME "uart4"
 /* end of RT-Thread Kernel */
 #define ARCH_ARM
 #define ARCH_ARM_CORTEX_M

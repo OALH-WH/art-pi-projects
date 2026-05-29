@@ -67,6 +67,7 @@ extern "C"
 /*-------------------------- UART CONFIG END --------------------------*/
 
 /*-------------------------- QSPI CONFIG BEGIN --------------------------*/
+#define BSP_QSPI_USR_MEM_MAP 0
 #define BSP_QSPI_ADDR_BASE 0x90000000
 /*-------------------------- QSPI CONFIG END --------------------------*/
 

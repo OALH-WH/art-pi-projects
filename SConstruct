@@ -7,7 +7,7 @@ RTT_ROOT = os.path.normpath(os.getcwd() + '/rt-thread')
 sys.path = sys.path + [os.path.join(RTT_ROOT, 'tools')]
 from building import *
 
-TARGET = 'rt-thread.elf'
+TARGET = 'Debug/rt-thread.elf'
 
 DefaultEnvironment(tools=[])
 env = Environment(tools = ['mingw'],
@@ -88,3 +88,6 @@ SRC_C.extend(sorted(_glob.glob('libraries/STM32H7xx_HAL_Driver/Src/*.c')))
 objs = [env.Object(s) for s in SRC_C + SRC_S]
 program = env.Program(TARGET, objs)
 env.CompilationDatabase('compile_commands.json')
+
+# Generate .bin from .elf after build
+env.AddPostAction(program, 'arm-none-eabi-objcopy -O binary $TARGET Debug/rt-thread.bin')

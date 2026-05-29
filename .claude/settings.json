@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd 'C:\\\\Users\\\\OALH\\\\MyFiles\\\\IDE\\\\RT-ThreadStudio\\\\workspace\\\\art-pi-projects'; scons\")"
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd 'C:\\\\Users\\\\OALH\\\\MyFiles\\\\IDE\\\\RT-ThreadStudio\\\\workspace\\\\art-pi-projects'; scons\")",
+      "Bash(scons -c)",
+      "Bash(scons)",
+      "Bash(bash flash.sh)",
+      "Bash(arm-none-eabi-readelf -S Debug/rt-thread.elf)",
+      "Bash(arm-none-eabi-readelf -l \"c:\\\\Users\\\\OALH\\\\MyFiles\\\\IDE\\\\RT-ThreadStudio\\\\workspace\\\\art-pi-projects\\\\Debug/rt-thread.elf\")"
     ]
   }
 }
