@@ -495,7 +495,9 @@ int rt_hw_qspi_init(void)
     /* Must init immediately — bootloader constraint */
     return rt_device_init(&qspi_device);
 }
+#if !BSP_QSPI_USING_EXAMPLE
 INIT_BOARD_EXPORT(rt_hw_qspi_init);
+#endif
 
 /*===========================================================================*
  *                    Boot-Time Smoke Test                                    *

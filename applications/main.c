@@ -14,6 +14,7 @@
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 #include <board.h>
+#include <w25qxx.h>
 
 extern volatile rt_bool_t qspi_ready;
 
@@ -24,6 +25,15 @@ int main(void)
 
     LOG_D("Hello RT-Thread!");
     LOG_D("Hello Test Bootloader");
+
+#if BSP_QSPI_USING_EXAMPLE
+    LOG_D("QSPI example mode, not jumping to external flash");
+    W25QXX_Init();
+#if BSP_QSPI_USR_MEM_MAP
+    W25Q_Memory_Mapped_Enable();
+#endif
+    qspi_ready = RT_TRUE;
+#endif
 
     if (!qspi_ready) {
         LOG_E("QSPI init failed, cannot boot from external flash");
