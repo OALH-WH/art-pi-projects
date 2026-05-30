@@ -363,12 +363,16 @@ check_qe:
 
     /* Quad I/O Fast Read (0xEB) */
     cmd.Instruction = 0xEB;
+    cmd.InstructionMode = QSPI_INSTRUCTION_1_LINE;
     cmd.AddressMode = QSPI_ADDRESS_4_LINES;
     cmd.AddressSize = QSPI_ADDRESS_24_BITS;
+    
     cmd.DataMode = QSPI_DATA_4_LINES;
-    cmd.DummyCycles = 8;
-    cmd.InstructionMode = QSPI_INSTRUCTION_4_LINES;
-    cmd.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+    cmd.DummyCycles = 4;
+
+    cmd.AlternateBytes = 0x00;
+    cmd.AlternateBytesSize = 1;
+    cmd.AlternateByteMode = QSPI_ALTERNATE_BYTES_4_LINES;
 
     cfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
     cfg.TimeOutPeriod = 0x0;

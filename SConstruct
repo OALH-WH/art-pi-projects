@@ -27,6 +27,12 @@ env.AppendUnique(CPPDEFINES = [
     'USE_HAL_DRIVER',
 ])
 
+# Compilation database (for clangd / IDE navigation) — must be before PrepareBuilding
+# so the StaticObject emitter captures all compilation commands.
+env.Tool('compilation_db')
+env['COMPILATIONDB_USE_ABSPATH'] = True
+env.CompilationDatabase('compile_commands.json')
+
 # ========== Collect sources via SConscript chain (no hardcoded file lists) ==========
 # PrepareBuilding parses rtconfig.h, collects objects from:
 #   - BSP:  root SConscript walks applications/, drivers/, libraries/, packages/
@@ -37,10 +43,6 @@ objs = PrepareBuilding(env, RTT_ROOT, has_libcpu=False)
 
 # Build ELF
 program = env.Program(TARGET, objs)
-
-# Compilation database (for clangd / IDE navigation)
-env.Tool('compilation_db')
-env.CompilationDatabase('compile_commands.json')
 
 # Generate .bin after build
 env.AddPostAction(program, 'arm-none-eabi-objcopy -O binary $TARGET Debug/rt-thread.bin')
