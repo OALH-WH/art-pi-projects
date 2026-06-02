@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./check_env.bat --force)",
+      "Bash(./check_env.cache)",
+      "Bash(./test_cache.bat)",
+      "Bash(./check_env.bat)",
+      "Bash(xxd)",
+      "Bash(cmd.exe /c \"@echo on & call check_env.bat\")"
+    ]
+  }
+}

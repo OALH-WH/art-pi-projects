@@ -48,6 +48,11 @@ rtua.py
 .config 4
 .config 5
 
+# Environment detection (auto-generated, machine-local paths)
+setenv.bat
+setenv.sh
+check_env_cache.bat
+
 # Debug / tracing
 *.dep
 *.d

@@ -423,7 +423,7 @@ CONFIG_PKG_U8G2_OFFICIAL_PATH="/packages/multimedia/u8g2/u8g2-official"
 #
 # U8G2 Examples
 #
-CONFIG_U8G2_USING_SW_I2C_SSD1306=y
+# CONFIG_U8G2_USING_SW_I2C_SSD1306 is not set
 # CONFIG_U8G2_USING_SW_SPI_SSD1306 is not set
 # CONFIG_U8G2_USING_8080_ST7920 is not set
 # end of U8G2 Examples

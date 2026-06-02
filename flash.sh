@@ -16,11 +16,21 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# STM32_Programmer_CLI 路径
-STM32_PROG="c:/Users/OALH/MyFiles/IDE/RT-ThreadStudio/repo/Extract/Debugger_Support_Packages/STMicroelectronics/ST-LINK_Debugger/2.11.0/tools/bin/STM32_Programmer_CLI.exe"
+# ============================================================================
+# 加载环境变量（从 check_env.bat 生成的 setenv.sh）
+# 如果 setenv.sh 存在，优先使用其中的检测到的路径
+# 否则使用以下硬编码默认值
+# ============================================================================
+if [ -f "$SCRIPT_DIR/setenv.sh" ]; then
+    echo "[flash] 加载 setenv.sh 环境配置..."
+    source "$SCRIPT_DIR/setenv.sh"
+fi
+
+# STM32_Programmer_CLI 路径（优先使用 setenv.sh 中的 STM32_PROG_PATH）
+STM32_PROG="${STM32_PROG_PATH:-c:/Users/OALH/MyFiles/IDE/RT-ThreadStudio/repo/Extract/Debugger_Support_Packages/STMicroelectronics/ST-LINK_Debugger/2.11.0/tools/bin/STM32_Programmer_CLI.exe}"
 
 # 外部 Flash 加载器（用于 W25Q64）
-STLDR="$SCRIPT_DIR/board/stldr/ART-Pi_W25Q64.stldr"
+STLDR="${STLDR:-$SCRIPT_DIR/board/stldr/ART-Pi_W25Q64.stldr}"
 
 # 目标文件
 BIN="rtthread.bin"
