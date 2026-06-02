@@ -16,6 +16,13 @@
 
 #ifdef RT_USING_I2C
 
+/* 如果 BSP 有自己板级的 I2C 驱动，则跳过库中的通用软件 I2C 驱动 */
+#ifdef BSP_USING_BOARD_I2C
+
+/* 编译为空 */
+
+#else
+
 //#define DRV_DEBUG
 #define LOG_TAG              "drv.i2c"
 #include <drv_log.h>
@@ -219,4 +226,5 @@ int rt_hw_i2c_init(void)
 }
 INIT_BOARD_EXPORT(rt_hw_i2c_init);
 
+#endif /* BSP_USING_BOARD_I2C */
 #endif /* RT_USING_I2C */

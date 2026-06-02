@@ -46,6 +46,9 @@ objs = PrepareBuilding(env, RTT_ROOT, has_libcpu=False)
 import building
 building_Env = building.Env
 
+# Add project root to include paths so lv_conf.h can be found by LVGL
+env.AppendUnique(CPPPATH=[PROJECT_DIR])
+
 stm32_library = 'STM32H7xx_HAL'
 rtconfig.BSP_LIBRARY_TYPE = stm32_library
 
@@ -74,20 +77,45 @@ _PYTHON = r'C:\Python314\python.exe'
 def _link_via_child_python(cmd_args):
     """Run gcc link command in a child Python process (clean process state).
 
-    We scan build/ for .o files instead of using scons' args list, which has
-    duplicated entries (575 vs ~93 actual .o files).
+    Extract .o paths from scons' args list and deduplicate them.  Packages
+    (e.g. u8g2) may compile .o into the source tree outside build/, so we
+    MUST NOT rely on scanning build/ alone.
+
+    To avoid Windows' MAX_PATH/cmd-line-length limit (~8191 chars), write
+    the .o list into a GCC response file and pass it via @file.rsp.
     """
-    # Scan build/ for actual .o files
-    obj_paths = []
-    for root, dirs, files in os.walk('build'):
-        for f in files:
-            if f.endswith('.o'):
-                obj_paths.append(os.path.join(root, f))
-    obj_paths.sort()
+    # Collect unique .o paths from SCons' args (may be quoted)
+    obj_paths = sorted(set(str(a).strip('"') for a in cmd_args if str(a).strip('"').endswith('.o')))
 
     if not obj_paths:
-        sys.stderr.write("ERROR: No .o files found in build/\n")
+        sys.stderr.write("ERROR: No .o files in link args\n")
         return 1
+
+    # Deduplicate: prefer build/ copies, drop source-tree duplicates
+    # (e.g. startup_stm32h750xx.o appears in both build/board/ and
+    #  libraries/.../gcc/ — only the build/ variant should be linked)
+    seen_basenames = set()
+    unique_paths = []
+    for p in obj_paths:
+        bn = os.path.basename(p)
+        if bn in seen_basenames:
+            if p.startswith('build'):
+                # Replace the earlier non-build entry with this build/ one
+                for i, prev in enumerate(unique_paths):
+                    if os.path.basename(prev) == bn:
+                        unique_paths[i] = p
+                        break
+        else:
+            seen_basenames.add(bn)
+            unique_paths.append(p)
+    obj_paths = sorted(unique_paths)
+
+    # Use forward slashes in the response file (GCC/Windows accepts them,
+    # and avoids backslash-as-escape issues in the response-file parser)
+    rsp = os.path.join(PROJECT_DIR, '.link_objs.rsp')
+    with open(rsp, 'w', newline='\n') as f:
+        for p in obj_paths:
+            f.write(p.replace('\\', '/') + '\n')
 
     helper = os.path.join(PROJECT_DIR, '.link_helper.py')
     with open(helper, 'w', newline='\n') as f:
@@ -95,17 +123,22 @@ def _link_via_child_python(cmd_args):
         f.write("gcc = %r\n" % GCC_PATH)
         f.write("target = %r\n" % TARGET)
         f.write("lflags = %r\n" % rtconfig.LFLAGS)
-        f.write("objs = %r\n" % obj_paths)
+        f.write("rsp = %r\n" % rsp)
         f.write("link_env = os.environ.copy()\n")
         f.write("link_env['PATH'] = %r + os.pathsep + r'C:\\Windows\\system32' + os.pathsep + r'C:\\Windows'\n" % rtconfig.EXEC_PATH)
-        f.write("cmd = [gcc] + lflags.split() + ['-o', target] + objs\n")
+        # Count objects
+        f.write("with open(rsp) as _f:\n")
+        f.write("    objs = [l.strip() for l in _f if l.strip()]\n")
         f.write("sys.stderr.write('Linking ' + target + ' with ' + str(len(objs)) + ' objects...\\n')\n")
+        f.write("cmd = [gcc] + lflags.split() + ['-o', target, '@' + rsp]\n")
         f.write("result = subprocess.run(cmd, env=link_env, shell=False)\n")
         f.write("if result.returncode != 0:\n")
         f.write("    sys.stderr.write('LINK FAILED (rc=' + str(result.returncode) + ')\\n')\n")
         f.write("sys.exit(result.returncode)\n")
     result = subprocess.run([_PYTHON, helper], env=os.environ, cwd=PROJECT_DIR)
     try: os.remove(helper)
+    except: pass
+    try: os.remove(rsp)
     except: pass
     return result.returncode
 

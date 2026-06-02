@@ -63,7 +63,7 @@ LVGL is pulled in as an RT-Thread online package at `packages/LVGL-latest/` (v9.
 - `packages/LVGL-latest/env_support/rt-thread/lv_rt_thread_port.c` — RT-Thread port: creates a dedicated `LVGL` thread that calls `lv_timer_handler()` at `PKG_LVGL_DISP_REFR_PERIOD` (5 ms). Calls `lv_port_disp_init()`, `lv_port_indev_init()`, `lv_user_gui_init()` — these must be provided externally.
 - `packages/LVGL-latest/env_support/rt-thread/SConscript` — Build script that walks `src/` recursively, adding all `.c` files and include paths. Uses `LOCAL_CFLAGS = ' -std=c99'` for GCC.
 
-**There is no `lv_conf.h` in the project** — LVGL falls back to `lv_conf_internal.h` defaults. Every LVGL source file emits `#pragma message("Possible failure to include lv_conf.h")` at compile time; this is a normal informational notice, not an error. To customize LVGL settings, add an `lv_conf.h` and define `LV_CONF_H`.
+**`lv_conf.h`** is at the [project root](./lv_conf.h) — a customized configuration for the ART-Pi board with RT-Thread. RT-Thread specific settings (`LV_USE_OS`, `LV_USE_STDLIB_*`, `LV_ATTRIBUTE_MEM_ALIGN`, etc.) are provided by `packages/LVGL-latest/env_support/rt-thread/lv_rt_thread_conf.h`, which is included before `lv_conf.h` and takes precedence. The project root is added to include paths in [SConstruct](./SConstruct#L48) so the compiler can find `lv_conf.h`.
 
 To enable LVGL demos or examples, set `PKG_LVGL_USING_DEMOS` or `PKG_LVGL_USING_EXAMPLES` in `rtconfig.h`.
 
