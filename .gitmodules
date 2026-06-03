@@ -1,0 +1,6 @@
+[submodule ".\\packages\\u8g2-official"]
+	path = .\\packages\\u8g2-official
+	url = https://github.com/olikraus/u8g2.git
+[submodule ".\\packages\\LVGL-official"]
+	path = .\\packages\\LVGL-official
+	url = https://github.com/lvgl/lvgl.git
