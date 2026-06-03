@@ -72,5 +72,5 @@ RTE/
 settings/
 .cache/
 
-scons.env.
+scons.env
 check_env_cache.json
