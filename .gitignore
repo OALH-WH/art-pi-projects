@@ -71,3 +71,5 @@ DebugConfig/
 RTE/
 settings/
 .cache/
+
+scons.env

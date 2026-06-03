@@ -2,6 +2,19 @@ import os
 import sys
 import subprocess
 import rtconfig
+import traceback
+import platform
+
+import os
+import sys
+from dotenv import load_dotenv
+import subprocess
+
+# 加载.env文件中的环境变量
+if os.path.exists('scons.env'):
+    load_dotenv('scons.env')
+else:
+    sys.stderr.write("ERROR: scons.env file not found. Please create it with the necessary environment variables.\n")
 
 if os.path.exists('rt-thread'):
     RTT_ROOT = os.path.normpath(os.getcwd() + '/rt-thread')
@@ -72,7 +85,7 @@ env.NoClean(db_target)
 # collect2 CreateProcess bug.
 # ============================================================================
 GCC_PATH = os.path.join(rtconfig.EXEC_PATH, 'arm-none-eabi-gcc.exe')
-_PYTHON = r'C:\Python314\python.exe'
+_PYTHON = os.environ['PYTHON_PATH']
 
 def _link_via_child_python(cmd_args):
     """Run gcc link command in a child Python process (clean process state).
@@ -158,7 +171,11 @@ def _spawn_with_link_fix(sh, escape, cmd, args, env):
             is_link = True
     if is_link:
         sys.stderr.write("Linking via child Python process...\n")
-        rc = _link_via_child_python(args)
+        try:
+            rc = _link_via_child_python(args)
+        except Exception as e:
+            sys.stderr.write("LINK FAILED (exception: %s)\n" % traceback.format_exc())
+            return 1
         if rc != 0:
             sys.stderr.write("LINK FAILED (rc=%d)\n" % rc)
         return rc
