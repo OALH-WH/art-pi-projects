@@ -40,3 +40,6 @@ compile_commands.json
 .sconsign*
 .sconf_temp*
 .scons_env.json
+**/scons.env
+**/check_env_cache.json
+**/NUL

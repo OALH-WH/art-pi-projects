@@ -1,5 +1,14 @@
 import os
 import sys
+
+from dotenv import load_dotenv
+
+# 加载.env文件中的环境变量（必须在 import rtconfig 之前，因为 rtconfig.py 会读取环境变量）
+if os.path.exists('scons.env'):
+    load_dotenv('scons.env')
+else:
+    sys.stderr.write("ERROR: scons.env file not found. Please create it with the necessary environment variables.\n")
+
 import rtconfig
 
 RTT_ROOT = os.path.normpath(os.getcwd() + '/rt-thread')
