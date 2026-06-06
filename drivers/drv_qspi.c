@@ -506,7 +506,7 @@ INIT_BOARD_EXPORT(rt_hw_qspi_init);
 /*===========================================================================*
  *                    Boot-Time Smoke Test                                    *
  *===========================================================================*/
-#if BSP_QSPI_USR_MEM_MAP
+#if (BSP_QSPI_USR_MEM_MAP && !BSP_QSPI_USING_EXAMPLE)
  int rt_hw_qspi_test(void)
 {
     if (!qspi_ready) {
